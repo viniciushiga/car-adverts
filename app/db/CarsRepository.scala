@@ -32,4 +32,12 @@ class CarsRepository {
   def update(car: Car): Car = {
     car
   }
+
+  def delete(id: UUID): Option[UUID] = {
+    if (id.equals(UUID.fromString("00000000-0000-0000-0000-000000000000"))) {
+      None
+    } else {
+      Some(id)
+    }
+  }
 }

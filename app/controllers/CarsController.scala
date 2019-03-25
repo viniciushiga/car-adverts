@@ -43,4 +43,11 @@ class CarsController @Inject() (cc: ControllerComponents, repo: CarsRepository) 
 
     Ok(Json.toJson(repo.update(car)))
   }
+
+  def destroy(id: UUID) = Action {
+    repo.delete(id) match {
+      case Some(_) => NoContent
+      case None => NotFound
+    }
+  }
 }
