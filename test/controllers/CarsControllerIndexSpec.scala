@@ -1,19 +1,15 @@
 package controllers
 
-import db.CarsRepository
-import org.scalatestplus.play._
-import org.scalatestplus.play.guice._
-import play.api.test._
-import play.api.test.Helpers._
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneAppPerTest
-import play.api.test.Injecting
+import play.api.test.Helpers._
+import play.api.test.{Injecting, _}
 
 class CarsControllerIndexSpec extends PlaySpec with GuiceOneAppPerTest with Injecting {
   "GET /cars" should {
     "renders all cars" in {
-      val controller = new CarsController(stubControllerComponents(), inject[CarsRepository])
-      val index = controller.index().apply(FakeRequest(GET, "/cars"))
+      val request = FakeRequest(GET, "/cars")
+      val index = route(app, request).get
 
       status(index) mustBe OK
       val json = contentAsJson(index)
