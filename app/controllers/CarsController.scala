@@ -1,5 +1,7 @@
 package controllers
 
+import java.util.UUID
+
 import db.CarsRepository
 import forms.CarForm
 import javax.inject.{Inject, Singleton}
@@ -24,5 +26,14 @@ class CarsController @Inject() (cc: ControllerComponents, repo: CarsRepository) 
     val car = carForm.toModel()
 
     Created(Json.toJson(repo.create(car)))
+  }
+
+  def update(id: UUID) = Action(parse.form(CarForm.form(), onErrors = (formWithErrors: Form[CarForm]) => {
+    BadRequest(Json.obj("errors" -> Json.toJson(formWithErrors.errors)))
+  })) { req =>
+    val carForm = req.body
+    val car = carForm.toModel(id)
+
+    Ok(Json.toJson(repo.update(car)))
   }
 }

@@ -33,9 +33,9 @@ object CarForm {
   }
 
   implicit class ConversionOps(self: CarForm) {
-    def toModel(): Car = {
+    def toModel(id: UUID): Car = {
       Car(
-        UUID.randomUUID(),
+        id,
         self.title,
         self.fuel,
         self.price,
@@ -43,6 +43,10 @@ object CarForm {
         self.mileage,
         self.firstRegistration
       )
+    }
+
+    def toModel(): Car = {
+      toModel(UUID.randomUUID())
     }
   }
 }

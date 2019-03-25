@@ -18,4 +18,8 @@ class CarsRepository {
   def create(car: Car): Car = {
     car
   }
+
+  def update(car: Car): Car = {
+    car
+  }
 }
