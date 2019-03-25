@@ -28,6 +28,13 @@ class CarsController @Inject() (cc: ControllerComponents, repo: CarsRepository) 
     Created(Json.toJson(repo.create(car)))
   }
 
+  def show(id: UUID) = Action {
+    repo.find(id) match {
+      case Some(car) => Ok(Json.toJson(car))
+      case None => NotFound
+    }
+  }
+
   def update(id: UUID) = Action(parse.form(CarForm.form(), onErrors = (formWithErrors: Form[CarForm]) => {
     BadRequest(Json.obj("errors" -> Json.toJson(formWithErrors.errors)))
   })) { req =>

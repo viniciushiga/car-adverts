@@ -15,6 +15,16 @@ class CarsRepository {
     )
   }
 
+  def find(id: UUID): Option[Car] = {
+    if (id.equals(UUID.fromString("00000000-0000-0000-0000-000000000000"))) {
+      None
+    } else {
+      Some(
+        Car(id, "Mercedes-Benz A250", Fuel.Gasoline, 2000000, true, None, None)
+      )
+    }
+  }
+
   def create(car: Car): Car = {
     car
   }
