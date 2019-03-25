@@ -2,6 +2,8 @@ package controllers
 
 import java.util.UUID
 
+import db.CarsRepository
+import models.{Car, Fuel}
 import play.api.test._
 import play.api.test.Helpers._
 import org.scalatestplus.play.PlaySpec
@@ -9,10 +11,19 @@ import org.scalatestplus.play.guice.GuiceOneAppPerTest
 import play.api.libs.json.JsNull
 import play.api.test.Injecting
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 class CarsControllerShowSpec extends PlaySpec with GuiceOneAppPerTest with Injecting {
+  implicit val context = scala.concurrent.ExecutionContext.global
+
   "GET /cars/:id" should {
     "returns car when it exits" in {
-      val id = UUID.randomUUID().toString
+      val repo = inject[CarsRepository]
+      val car = Car(UUID.randomUUID(), "Mercedes-Benz A250", Fuel.Gasoline, 2000000, true, None, None)
+      Await.result(repo.create(car), 5.seconds)
+
+      val id = car.id.toString
       val request = FakeRequest(GET, s"/cars/$id")
       val show = route(app, request).get
 

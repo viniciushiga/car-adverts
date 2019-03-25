@@ -1,43 +1,66 @@
 package db
 
-import java.time.LocalDate
 import java.util.UUID
 
-import javax.inject.Singleton
-import models.{Car, Fuel}
+import akka.actor.ActorSystem
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync
+import com.gu.scanamo.syntax._
+import com.gu.scanamo.{ScanamoAsync, Table}
+import db.DynamoFormats._
+import javax.inject.{Inject, Singleton}
+import models.Car
+import play.api.Configuration
+
+import scala.concurrent.Future
 
 @Singleton
-class CarsRepository {
-  def findAll(): Seq[Car] = {
-    Seq(
-      Car(UUID.randomUUID(), "Audi A3", Fuel.Gasoline, 1500000, true, None, None),
-      Car(UUID.randomUUID(), "BMW 120d", Fuel.Diesel, 1700000, false, Some(20000), Some(LocalDate.of(2018, 12, 25))),
-    )
+class CarsRepository @Inject() (config: Configuration, client: AmazonDynamoDBAsync, system: ActorSystem) {
+  implicit val context = system.dispatchers.lookup("car-repository")
+
+  val table = Table[Car](config.get[String]("dynamodb.table-name"))
+
+  def findAll(): Future[Seq[Car]] = {
+    val ops = for {
+      cars <- table.scan()
+    } yield cars
+
+    ScanamoAsync.exec(client)(ops).map(list => {
+      list.collect {
+        case Right(car) => car
+      }
+    })
   }
 
-  def find(id: UUID): Option[Car] = {
-    if (id.equals(UUID.fromString("00000000-0000-0000-0000-000000000000"))) {
-      None
-    } else {
-      Some(
-        Car(id, "Mercedes-Benz A250", Fuel.Gasoline, 2000000, true, None, None)
-      )
-    }
+  def find(id: UUID): Future[Option[Car]] = {
+    val ops = for {
+      result <- table.get('id -> id)
+    } yield result
+
+    ScanamoAsync.exec(client)(ops).map(_.flatMap(_.toOption))
   }
 
-  def create(car: Car): Car = {
-    car
+  def create(car: Car): Future[Option[Car]] = {
+    val ops = for {
+      _ <- table.put(car)
+      result <- table.get('id -> car.id)
+    } yield result
+
+    ScanamoAsync.exec(client)(ops).map(_.flatMap(_.toOption))
   }
 
-  def update(car: Car): Car = {
-    car
+  def update(car: Car): Future[Option[Car]] = {
+    find(car.id).flatMap(_.map(_ => create(car)).getOrElse(Future.successful(None)))
   }
 
-  def delete(id: UUID): Option[UUID] = {
-    if (id.equals(UUID.fromString("00000000-0000-0000-0000-000000000000"))) {
-      None
-    } else {
-      Some(id)
-    }
+  def delete(id: UUID): Future[Option[UUID]] = {
+    find(id).flatMap({
+      _.map(c => {
+        val ops = for {
+          result <- table.delete('id -> c.id)
+        } yield result
+
+        ScanamoAsync.exec(client)(ops).map(_ => Some(c.id))
+      }).getOrElse(Future.successful(None))
+    })
   }
 }

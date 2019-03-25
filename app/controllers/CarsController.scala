@@ -2,6 +2,7 @@ package controllers
 
 import java.util.UUID
 
+import akka.actor.ActorSystem
 import db.CarsRepository
 import forms.CarForm
 import javax.inject.{Inject, Singleton}
@@ -11,41 +12,45 @@ import play.api.mvc.{AbstractController, ControllerComponents}
 import serializers.{CarWrites, FormErrorWrites}
 
 @Singleton
-class CarsController @Inject() (cc: ControllerComponents, repo: CarsRepository) extends AbstractController(cc)  {
+class CarsController @Inject() (cc: ControllerComponents, repo: CarsRepository, system: ActorSystem) extends AbstractController(cc)  {
   implicit val carWrites = CarWrites()
   implicit val formErrorWrites = FormErrorWrites()
+  implicit val context = system.dispatcher
 
-  def index() = Action {
-    Ok(Json.toJson(repo.findAll()))
+  def index() = Action.async {
+    repo.findAll().map(cars => Ok(Json.toJson(cars)))
   }
 
-  def create() = Action(parse.form(CarForm.form(), onErrors = (formWithErrors: Form[CarForm]) => {
+  def create() = Action.async(parse.form(CarForm.form(), onErrors = (formWithErrors: Form[CarForm]) => {
     BadRequest(Json.obj("errors" -> Json.toJson(formWithErrors.errors)))
   })) { req =>
     val carForm = req.body
-    val car = carForm.toModel()
 
-    Created(Json.toJson(repo.create(car)))
+    repo.create(carForm.toModel()).map {
+      case Some(c) => Created(Json.toJson(c))
+      case None => InternalServerError
+    }
   }
 
-  def show(id: UUID) = Action {
-    repo.find(id) match {
+  def show(id: UUID) = Action.async {
+    repo.find(id).map {
       case Some(car) => Ok(Json.toJson(car))
       case None => NotFound
     }
   }
 
-  def update(id: UUID) = Action(parse.form(CarForm.form(), onErrors = (formWithErrors: Form[CarForm]) => {
+  def update(id: UUID) = Action.async(parse.form(CarForm.form(), onErrors = (formWithErrors: Form[CarForm]) => {
     BadRequest(Json.obj("errors" -> Json.toJson(formWithErrors.errors)))
   })) { req =>
     val carForm = req.body
-    val car = carForm.toModel(id)
-
-    Ok(Json.toJson(repo.update(car)))
+    repo.update(carForm.toModel(id)).map {
+      case Some(c) => Ok(Json.toJson(c))
+      case None => NotFound
+    }
   }
 
-  def destroy(id: UUID) = Action {
-    repo.delete(id) match {
+  def destroy(id: UUID) = Action.async {
+    repo.delete(id).map {
       case Some(_) => NoContent
       case None => NotFound
     }
