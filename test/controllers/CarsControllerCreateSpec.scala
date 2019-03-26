@@ -42,6 +42,7 @@ class CarsControllerCreateSpec extends PlaySpec with GuiceOneAppPerTest with Inj
       ( json \ "new" ).as[Boolean] must be (true)
       ( json \ "mileage" ).get must be(JsNull)
       ( json \ "firstRegistration" ).get must be(JsNull)
+      header("Location", create) must equal(Some(s"/cars/$id"))
 
       val repo = inject[CarsRepository]
       val expected = Car(UUID.fromString(id), "Mercedes-Benz A250", Fuel.Gasoline, 2000000, true, None, None)
@@ -71,6 +72,7 @@ class CarsControllerCreateSpec extends PlaySpec with GuiceOneAppPerTest with Inj
       ( json \ "new" ).as[Boolean] must be (false)
       ( json \ "mileage" ).as[Int] must equal(15000)
       ( json \ "firstRegistration").as[String] must equal("2018-12-31")
+      header("Location", create) must equal(Some(s"/cars/$id"))
 
       val repo = inject[CarsRepository]
       val expected = Car(UUID.fromString(id), "Mercedes-Benz A250", Fuel.Gasoline, 2000000, false, Some(15000), Some(LocalDate.of(2018, 12, 31)))

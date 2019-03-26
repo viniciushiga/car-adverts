@@ -28,6 +28,7 @@ class CarsController @Inject() (cc: ControllerComponents, repo: CarsRepository, 
 
     repo.create(carForm.toModel()).map {
       case Some(c) => Created(Json.toJson(c))
+        .withHeaders("Location" -> s"/cars/${c.id}")
       case None => InternalServerError
     }
   }
