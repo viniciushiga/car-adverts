@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# script/test: Run test suite for application.
+
+set -e
+
+cd "$(dirname "$0")/.."
+
+docker-compose run app sbt test
